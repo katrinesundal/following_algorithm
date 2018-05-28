@@ -1,0 +1,6 @@
+Header header
+float64 rightRPM
+float64 leftRPM
+float64 rightNozzle
+float64 leftNozzle
+float64 bowThruster

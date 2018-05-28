@@ -1,0 +1,57 @@
+# Parameters for Following Algorithm 
+
+# Controller parameters
+T_theta_begin: 5 #time constant
+T_theta_end: 5 #time constant
+azimuth_rotation_cutoff_RPM: 300 #rpm
+timeout_time: 1 #sec
+yaw_error_cutoff: 3.14 #rad
+#controller_type: "point_to_point"  # "heading_equilibrium" #     
+#surge_error_flag_limit: 150 #m, flag is raised if error is larger than this value
+
+#Low-pass filter param
+timestep: 0.1 #s
+time_constant_lowpass_filter_azimuth_RPM: 1 # Used to filter azimuth rpm output to smooth out rapid changes
+time_constant_lowpass_filter_azimuth_rotation: 1 # Used to filter azimuth rotation output to smooth out rapid changes
+
+# Shoal parameters
+shoal_size: 10 #m
+
+# Kp matrix
+kp_surge: 160
+kp_sway: 0.005
+kp_heave: 0
+kp_roll: 0
+kp_pitch: 0
+kp_yaw: 4000
+
+# Kd matrix
+kd_surge: 80
+kd_sway: 0 
+kd_heave: 0
+kd_roll: 0 
+kd_pitch: 0
+kd_yaw: 0
+
+# Ki matrix
+ki_surge: 4
+ki_sway: 0 
+ki_heave: 0
+ki_roll: 0 
+ki_pitch: 0
+ki_yaw: 0
+
+# Motor parameters
+K_azimuth: 0.0025 # Thruster constant: Thruster force = K * rpm * abs(rpm)
+K_bowthruster: 0.0002 # Thruster constant: Thruster force = K * rpm * abs(rpm)
+dir_bowthruster: 1 # Direction of force applied to boat from positive bowthruster rpm. 1 = starboard, -1 = port
+rpm_bowthruster_min: 100
+rpm_bowthruster_max: 2000
+rpm_azimuth_min: 100 # Minimum rpm allowed on azimuth thrusters.
+rpm_azimuth_max: 1200 # Maximum rpm allowed on azimuth thrusters
+l_x_bowthruster: 4 # X-coordinate of bowthruster from pivot point, in meters
+l_y_right_azimuth: 0.5 #Y-coordinate of right thruster from pivot point, in meters
+l_y_left_azimuth: -0.5 # Y-coordinate of left thruster from pivot point, in meters
+l_x_right_azimuth: -5.1 #X-coordinate of right thruster from pivot point, in meters
+l_x_left_azimuth: -5.1 # X-coordinate of left thruster from pivot point, in meters
+azimuth_rotation_max: 0.77 #Radians (+- 45 deg = 0.7853rad) 
