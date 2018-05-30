@@ -39,6 +39,13 @@ public:
 	}
 
 private: 
+	ros::Publisher heartbeat_pub_;
+	following_algorithm::Heartbeat heartbeat_;
+	ros::Duration timeout_time_;
+	ros::Time last_odometry_message_receive_time_;
+	bool odometryTimeout(); // Returns true if more than timeout_time_ has passed since last odometry message was received.
+	bool isWithinRangeLimit();
+
 	ros::NodeHandle nh_; 
 	bool readParameters(ros::NodeHandle nh);
 	
@@ -65,19 +72,20 @@ private:
 	ros::Publisher error_pub_; // Publishing message with errors to plot in GUI
 	void publishErrors(); // Used to plot errors in GUI
 
-	ros::Publisher heartbeat_pub_;
-	following_algorithm::Heartbeat heartbeat_;
-	ros::Duration timeout_time_;
-	ros::Time last_odometry_message_receive_time_;
-	bool odometryTimeout(); // Returns true if more than timeout_time_ has passed since last odometry message was received.
-	bool isWithinRangeLimit();
-
 	ros::ServiceClient get_max_surge_force_client_; // Service to get max T_x
   	virtual_anchor::get_max_surge_force get_max_surge_force_srv_;
 
-
-
-	double timestep_; // Controller timestep length
+  	double yaw_, yaw_error_, yaw_rate_; // rad, rad/s
+	double surge_error_, surge_velocity_; // m, m/s
+	double sway_error_, old_sway_error_; // New and old errors in sway
+	double desired_theta_, theta_; // Angle of vector pointing from anchor to vessel, given in +- pi radians from north (clockwise is positive)
+	double max_surge_force_; // Maximum amount of surge force that can be produced by the thrusters
+  	double timestep_; // Controller timestep length
+  	VarTimeConst T_theta; // Varying time constant for low-pass filtering of desired_theta. Starts small, ends up big. 
+	
+  	double yaw_error_cutoff_; // Angle, in radians, at which surge control output is set to zero
+	double desired_distance_; // Desired distance from the shoal
+	double surge_error_flag_limit_; // If the vessel is further away from the anchor point than this distance, heartbeat.is_inside_range_limit is set to false
 
 	Eigen::MatrixXcd kp_ = Eigen::MatrixXcd(6,6); // Matrix with kp values on the diagonal
 	Eigen::MatrixXcd kd_ = Eigen::MatrixXcd(6,6); // Matrix with kd values on the diagonal

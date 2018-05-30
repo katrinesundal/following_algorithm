@@ -6,13 +6,14 @@
 
     <rosparam command="load" file="$(find simulator_prototype)/config/models/SeaKit.yaml" /> 
     <rosparam command="load" file="$(find simulator_prototype)/config/SimulationParameters.yaml" />
-    <rosparam command="load" file="$(find virtual_anchor)/config/VirtualAnchorParameters.yaml" />
+    <rosparam command="load" file="$(find following_algorithm)/config/FollowingAlgorithmParameters.yaml" />
 
     <remap from="virtual_anchor/odom" to="sensors/odom" />
 
     <param name="hil/robot_description" textfile="$(find simulator_prototype)/config/models/Odin.urdf"/>
 
-	 <node pkg="rviz" type="rviz" name="rviz" args="-d $(find simulator_prototype)/config/rviz/SEAKIT.rviz" /> 
+	 <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find simulator_prototype)/config/rviz/SEAKIT.rviz" /> -->
+
     <node pkg="gui" name="gui_node" type="gui" respawn="false" output="screen">
     </node>
 
@@ -25,16 +26,11 @@
 
     <!--<node pkg="virtual_anchor" type="anchor_dropper" name="anchor_dropper" output="screen"/>-->
 
-    <!--<node pkg="virtual_anchor" type="tf_odom_to_local_NED" name="tf_odom_to_local_NED" output="screen"/>-->
+    <node pkg="following_algorithm" type="tf_odom_ned" name="tf_odom_ned" output="screen"/>
 
     <node pkg="following_algorithm" type="thrust_output" name="thrust_output" output="screen"/>
 
     <node pkg="following_algorithm" type="following_algorithm" name="following_algorithm" output="screen"/>
-
-    <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" output="screen"/>
- 
-    <!--<node pkg="virtual_anchor" type="controller_dyn_reconfigure" name="controller_dyn_reconfig" output="screen" />-->
-
 
  <!-- ___________________________________ LOG NODE __________________________________________ -->
  <!-- This node logs all the data necessary to show a complete test run in gui -->
@@ -43,7 +39,7 @@
 <node pkg="rosbag" type="record" name="record_virtual_anchor"  
 args="-o 
 
-/home/maureen/Seakit2017Summer/log/
+/home/msc/log/
 
 sensors/odom
 virtual_anchor/position

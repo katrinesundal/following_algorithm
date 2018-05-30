@@ -52,6 +52,38 @@ void FollowingAlgorithm::publishHeartbeat()
 	heartbeat_pub_.publish(heartbeat_);
 }
 
+bool FollowingAlgorithm::odometryTimeout()
+{
+	ros::Duration time_since_last_message;
+	time_since_last_message = ros::Time::now() - last_odometry_message_receive_time_;
+	
+	return (time_since_last_message > timeout_time_);
+}
+
+bool FollowingAlgorithm::isWithinRangeLimit()
+{
+	geometry_msgs::TransformStamped transform_stamped;
+
+    try{ //transform origin in anchor_NED to body fixed.
+    	transform_stamped = tf_buffer_.lookupTransform("body_fixed","shoal", ros::Time(0), ros::Duration(5.0));
+    }
+    catch (tf2::TransformException &ex) {
+      	ROS_WARN("%s",ex.what());
+      	heartbeat_.transform_ok = false;
+    }
+    heartbeat_.transform_ok = true;
+	double distance_to_shoal = sqrt(pow(transform_stamped.transform.translation.x, 2) + pow(transform_stamped.transform.translation.y, 2));
+
+	if(distance_to_shoal < surge_error_flag_limit_)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 bool FollowingAlgorithm::readParameters(ros::NodeHandle nh)
 {
 	bool parameterFail = false;
@@ -134,8 +166,6 @@ bool FollowingAlgorithm::readParameters(ros::NodeHandle nh)
 	return !parameterFail; //return true if sucessful
 
 }
-
-
 
 void FollowingAlgorithm::setShoalParameter(const following_algorithm::setShoalParameter::ConstPtr& shoal_parameter)
 {
@@ -227,7 +257,7 @@ void FollowingAlgorithm::calculateForce()
 
 	output_force_vector_ = p_and_d + integral_term_;
 
-	/*///Saturating controller
+	///Saturating controller
 	if(output_force_vector_(0).real() < 0)
 	{ //Reverse thrust not allowed
 		output_force_vector_(0) =  0;
@@ -236,7 +266,8 @@ void FollowingAlgorithm::calculateForce()
 	{ //Facing the wrong way - stop main thrusters
 		output_force_vector_(0) =  0;
 	}
-	if(surge_error_ < distance_cutoff_ - desired_distance_)
+	
+	/*if(surge_error_ < distance_cutoff_ - desired_distance_)
 	{ //Very close to the anchor point - just relax :)
 		output_force_vector_(0) = 0;
 		output_force_vector_(5) = 0;
