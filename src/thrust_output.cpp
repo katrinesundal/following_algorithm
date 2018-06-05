@@ -7,7 +7,7 @@ ThrustOutput::ThrustOutput()
 
 	if(!readParameters(nh_))
 	{
-		ROS_INFO("Unable to read boat controller parameter file. Exit node following_algorithm");
+		ROS_INFO("Unable to read boat controller parameter file. Exit node thrust_output");
 		ros::shutdown();
 	}
 	getMaxTx_srv = nh_.advertiseService("following_algorithm/get_max_surge_force", &ThrustOutput::getMaxSurgeForce, this);
@@ -119,7 +119,7 @@ double ThrustOutput::azimuthThrust()
 	return (K_azimuth_ * rpm_azimuth_filtered_output_ * std::abs(rpm_azimuth_filtered_output_));
 }
 
-void ThrustOutput::recieveForceVecAndComputeOutput(const geometry_msgs::Twist::ConstPtr &force_vec)
+void ThrustOutput::receiveForceVecAndComputeOutput(const geometry_msgs::Twist::ConstPtr &force_vec)
 {
 	surge_force_ = force_vec->linear.x;
 	yaw_moment_ = force_vec->angular.z;
@@ -182,7 +182,7 @@ void ThrustOutput::calculateAzimuthRotation()
 	}
 	else
 	{
-		rpm_azimuth = 0;
+		azimuth_rotation = 0;
 	}
 	azimuth_rotation_filtered_output_ = lowpassFilter(azimuth_rotation_filtered_output_, azimuth_rotation, time_constant_lowpass_filter_azimuth_rotation_);
 	ROS_INFO("Azimuth_rotation = %f", azimuth_rotation_filtered_output_);

@@ -37,7 +37,7 @@ private:
 
 	// Thruster input
 	ros::Subscriber force_vec_sub_;
-	void recieveForceVecAndComputeOutput(const geometry_msgs::Twist::ConstPtr &forve_vec); // Recieves the force vector from following_algorithm.cpp
+	void receiveForceVecAndComputeOutput(const geometry_msgs::Twist::ConstPtr &forve_vec); // Recieves the force vector from following_algorithm.cpp
 
 	// Calculations 
 	void calculateAzimuthRPM(); // Calculates the motor RPM of the azimuth motors required to produce the surge_force_ demanded by the received force vector

@@ -4,7 +4,12 @@ using namespace std;
 TF::TF()
 { 
 	got_first_odom_msg_ = false;
-	shoal_of_fishes_detected_ = false; 
+	shoal_of_fishes_detected_ = false;
+
+	if (!nh_.getParam("set_shoal_size", set_shoal_size_))
+	{
+		set_shoal_size_ = 0; //ROS_INFO?
+	}
 
 	odom_message_rec = nh_.subscribe<nav_msgs::Odometry>("following_algorithm/odom", 0, &TF::receiveOdomMsg, this); // Subscribing to mru message of type Odometry
 
@@ -16,9 +21,11 @@ TF::TF()
 		ros::Duration(1.0).sleep();
 	}
 
-	shoal_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_coordinates", 0, &TF::startShoalByGPS, this);// Subscribing to message from starting the shoal of fish at a point by coordinates
-	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000);// Publishing shoal position to GUI for drawing
 
+	activate_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_distance_ahead", 0, &TF::startShoalByGPS, this); // Subscribing to message from releasing the shoal of fish by a startpoint GPSsss
+	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &TF::removeShoal, this); // Subscribing to message from removing the shoal
+	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &TF::setShoalParameter, this); 
+	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000); // Publishing shoal to GUI for drawing circles
 }
 
 TF::~TF()
@@ -26,13 +33,13 @@ TF::~TF()
 
 }
 
-double TF::latitudeDegsPrMeter()
+double TF::latitudeDegPrMeter()
 {
 	double r = 6378000; // Meters, assumed constant, radius of the earth
 	return 90/(2*M_PI*r/4);
 }
 
-double TF::longitudeDegsPrMeter(double currentLatitude)
+double TF::longitudeDegPrMeter(double currentLatitude)
 {
 	double deg2rad = M_PI/180; // Converting degrees to radians
 	double r = 6378000; // Meters, assumed constant, radius of the earth
@@ -49,8 +56,8 @@ void TF::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg)
 	if(shoal_of_fishes_detected_) // TODO: where is this variable set?? 
 	{
 		
-		double north_dist = (boat_gps_position_.latitude - shoal_gps_position_.latitude)/latitudeDegsPrMeter();// Update north_dist
-		double east_dist = (boat_gps_position_.longitude - shoal_gps_position_.longitude)/longitudeDegsPrMeter(boat_gps_position_.latitude);// Update east_dist
+		double north_dist = (boat_gps_position_.latitude - shoal_gps_position_.latitude)/latitudeDegPrMeter();// Update north_dist
+		double east_dist = (boat_gps_position_.longitude - shoal_gps_position_.longitude)/longitudeDegPrMeter(boat_gps_position_.latitude);// Update east_dist
 		//publish transform
 		static tf2_ros::TransformBroadcaster broadcaster;
 		geometry_msgs::TransformStamped transform_stamped;
@@ -73,11 +80,44 @@ void TF::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
 }
 
+void TF::setShoalParameter(const following_algorithm::SetShoalParameter::ConstPtr& shoal_parameter)
+{
+	if(shoal_parameter->name == "set_shoal_size_" || shoal_parameter->name == "set_shoal_size")
+	{
+		set_shoal_size_ = shoal_parameter->value;
+	}
+}
+
+void TF::startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& shoal_starting_point)
+{
+	shoal_gps_position_.latitude = shoal_starting_point->latitude;
+	shoal_gps_position_.longitude = shoal_starting_point->longitude;
+	shoal_of_fishes_detected_ = true;
+
+	following_algorithm::guiObjectUpdate shoal;
+	shoal.msgDescriptor ="position_update";
+	shoal.objectDescriptor = "shoal";
+	shoal.objectID = "shoal_1";
+	shoal.size = 10.0;
+	shoal.longitude = shoal_gps_position_.longitude;
+	shoal.latitude = shoal_gps_position_.latitude;
+	shoal.heading = 0.0;
+	draw_shoal_pub_.publish(shoal);
+
+	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
+	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
+}
+
+void TF::removeShoal(const std_msgs::Empty msg)
+{
+	shoal_of_fishes_detected_ = false;
+}
+
 int main(int argc, char* argv[])
 {
 	ros::init(argc, argv, "tf_odom_ned");
 	ros::start();
-	ROS_INFO("Started node tf_odom_ned.");
+	ROS_INFO("Started node tf_odom_ned");
 
 	TF tf_odom_ned;
 	

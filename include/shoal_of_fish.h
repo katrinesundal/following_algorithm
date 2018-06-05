@@ -1,4 +1,4 @@
-// Node to create a moving "shoal of fish" 
+// Node to create a moving "shoal of fish" or releasing the shoal of fish by GPS and moving by new GPS points
 // Creating a circle that defines the shoal, and a pre set path for the shoal to follow
 
 #ifndef SHOAL_OF_FISH_H
@@ -16,7 +16,8 @@
 #include "std_msgs/Float64.h"
 #include "std_msgs/Empty.h"
 #include "following_algorithm/guiObjectUpdate.h"
-#include "following_algorithm/AnchorCoordinates.h"
+#include "following_algorithm/ShoalCoordinates.h"
+#include "following_algorithm/SetShoalParameter.h"
 
 class ShoalOfFish
 {
@@ -27,12 +28,10 @@ public:
 
 private: 
 	ros::NodeHandle nh_;
-	ros::Subscriber shoal_coordinates_sub_;
-	// Activate and deactivate shoal?? 
-	ros::Publisher draw_shoal_pub_;
 
-	void startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& shoal_starting_point); // Releases shoal of fish at a specific coordinates defined when the shoal is started, activates the following algorithm
-	void setShoalParameter(const following_algorithm::setShoalParameter::ConstPtr& shoal_parameter);
+
+
+
 
 };
 

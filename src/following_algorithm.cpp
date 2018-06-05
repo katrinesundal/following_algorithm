@@ -1,13 +1,14 @@
 #include "following_algorithm.h"
 using namespace std; 
 
-
+// Public
 FollowingAlgorithm::FollowingAlgorithm()
 {
 	get_max_surge_force_client_ = nh_.serviceClient<following_algorithm::get_max_surge_force>("following_algorithm/get_max_surge_force");
 	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &FollowingAlgorithm::setShoalParameter, this);
 	mru_message_sub_ = nh_.subscribe<nav_msgs::Odometry>("following_algorithm/odom", 0, &FollowingAlgorithm::receiveOdomMsg, this);
 	force_vec_pub_ = nh_.advertise<geometry_msgs::Twist>("following_algorithm/force_vector", 1000);
+	set_K_val_sub_ = nh_.subscribe("following_algorithm/set_K_val", 0, &FollowingAlgorithm::setKValues, this);
 	activate_by_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_coordinates", 0, &FollowingAlgorithm::activateByCoordinates, this);
 	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &FollowingAlgorithm::deactivate, this);
 	heartbeat_pub_ = nh_.advertise<following_algorithm::Heartbeat>("following_algorithm/heartbeat", 1000);
@@ -39,6 +40,26 @@ FollowingAlgorithm::~FollowingAlgorithm()
 
 void FollowingAlgorithm::step()
 {
+	if(!odometryTimeout())
+	{
+		if(calculateErrors())
+		{
+			heartbeat_.is_inside_range_limit = isWithinRangeLimit();
+			calculateForce();
+		}
+		else
+		{
+			ROS_WARN("Error receiving controller input. Setting all controller output to zero");
+			output_force_vector_ << 0, 0, 0, 0, 0, 0;
+		}		
+	}
+	else
+	{
+		ROS_WARN("No odometry message received for %d second(s). Setting all controller output to zero", timeout_time_.sec);
+		output_force_vector_ << 0, 0, 0, 0, 0, 0;
+	}
+	publishForce();	
+	publishErrors(); //Publishes to GUI for plotting
 	
 }
 
@@ -52,6 +73,7 @@ void FollowingAlgorithm::publishHeartbeat()
 	heartbeat_pub_.publish(heartbeat_);
 }
 
+// Private
 bool FollowingAlgorithm::odometryTimeout()
 {
 	ros::Duration time_since_last_message;
@@ -87,7 +109,7 @@ bool FollowingAlgorithm::isWithinRangeLimit()
 bool FollowingAlgorithm::readParameters(ros::NodeHandle nh)
 {
 	bool parameterFail = false;
-	virtual_anchor::ControllerKValues k_values;
+	following_algorithm::ControllerKValues k_values;
 	// Reads Kp from Config file
 	if (!nh.getParam("kp_surge", k_values.surge))
 		parameterFail=true;
@@ -167,10 +189,14 @@ bool FollowingAlgorithm::readParameters(ros::NodeHandle nh)
 
 }
 
-void FollowingAlgorithm::setShoalParameter(const following_algorithm::setShoalParameter::ConstPtr& shoal_parameter)
+void FollowingAlgorithm::setShoalParameter(const following_algorithm::SetShoalParameter::ConstPtr& shoal_parameter)
 {
 	if(shoal_parameter->name == "shoal_size"){
 		shoal_size_ = shoal_parameter->value;
+	}
+	if(shoal_parameter->name == "surge_error_flag_limit"){
+		surge_error_flag_limit_ = shoal_parameter->value;
+		ROS_INFO("surge_error_flag_limit=%f",surge_error_flag_limit_);
 	}
 	else 
 	{
@@ -181,11 +207,55 @@ void FollowingAlgorithm::setShoalParameter(const following_algorithm::setShoalPa
 void FollowingAlgorithm::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom)
 {
 	yaw_rate_ = odom->twist.twist.angular.z;
-	surge_velocity_ = odom->twist-twist-linear.x;
+	surge_velocity_ = odom->twist.twist.linear.x;
 	yaw_ = tf2::getYaw(odom->pose.pose.orientation);
 }
 
-bool FollowingAlgorithm::frameTransform()
+void FollowingAlgorithm::getKValues(const following_algorithm::ControllerKValues::ConstPtr& k_values)
+{
+ 	setKValues(*k_values);
+}
+
+void FollowingAlgorithm::setKValues(following_algorithm::ControllerKValues k_values)
+{
+ 	Eigen::MatrixXcd k_mat;;
+ 	Eigen::VectorXcd k_vec = Eigen::VectorXcd(6);
+ 	k_vec << k_values.surge, k_values.sway, k_values.heave, k_values.roll, k_values.pitch, k_values.yaw;
+ 	k_mat = k_vec.asDiagonal();
+ 	std::cout << k_mat << "\n";
+ 	char term = k_values.term[0];
+	switch(term)
+	{
+		case 'p':
+		case 'P':
+			kp_ = k_mat;
+			break;
+		case 'i':
+		case 'I':
+			ki_ = k_mat;
+			break;
+		case 'd':
+		case 'D':
+			kd_ = k_mat;
+			break;
+		default:
+			ROS_WARN("Error setting controller K values: Invalid 'term' parameter. Should be 'p', 'P', 'i', 'I', 'd' or 'D'");
+	}
+}
+
+void FollowingAlgorithm::activateByCoordinates(const following_algorithm::ShoalCoordinates::ConstPtr& shoal_starting_point)
+{
+	heartbeat_.is_active = true;
+	ROS_INFO("Shoal starting point set by coordinates ( %f , %f )", shoal_starting_point->latitude, shoal_starting_point->longitude);
+}
+
+void FollowingAlgorithm::deactivate(const std_msgs::Empty msg)
+{
+	heartbeat_.is_active = false;
+	ROS_INFO("Dectivated node following_algorithm");
+}
+
+bool FollowingAlgorithm::frameTransform(geometry_msgs::TransformStamped &transform_stamped, std::string parent_frame, std::string child_frame)
 {
 	try
 	{
@@ -197,7 +267,6 @@ bool FollowingAlgorithm::frameTransform()
       	heartbeat_.transform_ok = false;
       	return false;
     }
-
     
     ros::Time now = ros::Time::now();
     ros::Duration time_since_transform_was_made = now - transform_stamped.header.stamp;
@@ -214,16 +283,16 @@ bool FollowingAlgorithm::frameTransform()
     }
 }
 
-void FollowingAlgorithm::calculateErrors()
+bool FollowingAlgorithm::calculateErrors()
 {
 	geometry_msgs::TransformStamped transform_stamped;
 
-	if(!getCoordinateFrameTransform(transform_stamped, "body_fixed", "shoal"))
+	if(!frameTransform(transform_stamped, "body_fixed", "shoal"))
 	{
 		return false;
 	}
 
-	yaw_error_ = atan2(transform_stamped.transform.translation.y, transform_stamped.transform.translation.x)
+	yaw_error_ = atan2(transform_stamped.transform.translation.y, transform_stamped.transform.translation.x);
 	surge_error_ = sqrt(pow(transform_stamped.transform.translation.x, 2) + pow(transform_stamped.transform.translation.y, 2)); 
 
 	return true;
@@ -245,7 +314,7 @@ void FollowingAlgorithm::calculateForce()
 		integral_term_ += integral_add;
 	}
 
-	if(integral_term_(0).real < 0)
+	if(integral_term_(0).real() < 0)
 	{
 		integral_term_(0) = 0;
 	}
@@ -266,7 +335,7 @@ void FollowingAlgorithm::calculateForce()
 	{ //Facing the wrong way - stop main thrusters
 		output_force_vector_(0) =  0;
 	}
-	
+
 	/*if(surge_error_ < distance_cutoff_ - desired_distance_)
 	{ //Very close to the anchor point - just relax :)
 		output_force_vector_(0) = 0;
@@ -304,8 +373,18 @@ int main(int argc, char* argv[])
 	ROS_INFO("Started node following_algorithm.");
 
 	FollowingAlgorithm following_algorithm;
+	ros::Rate loopRate(1/following_algorithm.getTimestep());
 	
-	ros::spin();
+	while(ros::ok())
+	{	
+		following_algorithm.publishHeartbeat();
+		if(following_algorithm.isActive())
+		{
+			following_algorithm.step();
+		}
+		ros::spinOnce();
+		loopRate.sleep();
+	}
 
 	ROS_INFO("exit node following_algorithm");
 	ros::shutdown();

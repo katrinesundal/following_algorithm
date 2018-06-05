@@ -6,7 +6,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  genmsg
   message_generation
+  tf2_ros
+  tf2
+  tf2_geometry_msgs
+  geometry_msgs
+  nav_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -31,6 +37,8 @@ add_definitions(-std=c++11 -Wall -g)
    guiObjectUpdate.msg
    SetShoalParameter.msg
    ShoalCoordinates.msg
+   Heartbeat.msg
+   ControllerKValues.msg
 
  )
 
@@ -97,20 +105,21 @@ include_directories(
   ${EIGEN_INCLUDE_DIRS}
 )
 
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(thrust_output src/thrust_output.cpp)
+target_link_libraries(thrust_output ${catkin_LIBRARIES})
+add_dependencies(thrust_output following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/following_algorithm_node.cpp)
+add_executable(following_algorithm src/following_algorithm.cpp src/var_time_const.cpp)
+target_link_libraries(following_algorithm ${catkin_LIBRARIES})
+add_dependencies(following_algorithm following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
-#add_executable(thrust_output src/thrust_output.cpp)
-#target_link_libraries(thrust_output ${catkin_LIBRARIES})
-#add_dependencies(thrust_output following_algorithm_generate_messages_cpp #${catkin_EXPORTED_TARGETS})
+add_executable(tf_odom_ned src/tf_odom_ned.cpp)
+target_link_libraries(tf_odom_ned ${catkin_LIBRARIES})
+add_dependencies(tf_odom_ned following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
+#add_executable(shoal_of_fish src/shoal_of_fish.cpp)
+#target_link_libraries(shoal_of_fish ${catkin_LIBRARIES})
+#add_dependencies(shoal_of_fish following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
