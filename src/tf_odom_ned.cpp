@@ -22,7 +22,7 @@ TF::TF()
 	}
 
 
-	activate_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_distance_ahead", 0, &TF::startShoalByGPS, this); // Subscribing to message from releasing the shoal of fish by a startpoint GPSsss
+	activate_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_coordinates", 0, &TF::startShoalByGPS, this); // Subscribing to message from releasing the shoal of fish by a startpoint GPS
 	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &TF::removeShoal, this); // Subscribing to message from removing the shoal
 	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &TF::setShoalParameter, this); 
 	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000); // Publishing shoal to GUI for drawing circles

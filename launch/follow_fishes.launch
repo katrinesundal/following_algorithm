@@ -19,7 +19,7 @@
 
     <node pkg="simulator_prototype" type="hil_simulator_node" name="simulated_vessel" output="screen"/>
 
-    <node pkg="hilsim_virtual_anchor_bridge" type="transform_actuators_msg" name="transform_actuators_msg" output="screen" />
+    <node pkg="hilsim_following_algorithm_bridge" type="tf_actuator_msg" name="tf_actuator_msg" output="screen" />
 
 
 <!--  ______________________________ FOLLOWING ALGORITHM NODES _______________________________ -->
