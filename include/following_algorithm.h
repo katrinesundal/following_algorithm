@@ -3,20 +3,20 @@
 
 #include "ros/ros.h"
 #include "string"
-#include "complex"
 #include "math.h"
+#include "complex"
 #include "Eigen/Dense"
-#include "geometry_msgs/TransformStamped.h"
-#include "geometry_msgs/Twist.h"
-#include "std_msgs/Float64.h"
-#include "std_msgs/Empty.h"
-#include "std_msgs/Float64MultiArray.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 #include "nav_msgs/Odometry.h"
+#include "geometry_msgs/TransformStamped.h"
+#include "geometry_msgs/Twist.h"
+#include "std_msgs/Float64.h"
+#include "std_msgs/Empty.h"
+#include "std_msgs/Float64MultiArray.h"
 #include "var_time_const.h"
 #include "following_algorithm/get_max_surge_force.h"
 #include "following_algorithm/ShoalCoordinates.h"
@@ -39,14 +39,15 @@ public:
 	}
 
 private: 
+	ros::NodeHandle nh_;
+	
 	ros::Publisher heartbeat_pub_;
 	following_algorithm::Heartbeat heartbeat_;
 	ros::Duration timeout_time_;
 	ros::Time last_odometry_message_receive_time_;
 	bool odometryTimeout(); // Returns true if more than timeout_time_ has passed since last odometry message was received.
 	bool isWithinRangeLimit();
-
-	ros::NodeHandle nh_; 
+ 
 	bool readParameters(ros::NodeHandle nh);
 	
 	ros::Subscriber set_param_sub_;
@@ -62,6 +63,8 @@ private:
 	
 	ros::Subscriber activate_by_coordinates_sub_;// Subscribing to message from releasing the shoal by coordinates
 	void activateByCoordinates(const following_algorithm::ShoalCoordinates::ConstPtr& shoal_starting_point); // Activates the following algorithm by "releasing" the shoal of fish
+	ros::Subscriber activate_by_distance_sub_;// Subscribing to message from dropping the anchor by distance from boat to anchor point
+	void activateByDistanceAhead(const std_msgs::Float64 msg); // Activating the following algorithm node by setting a distance from the boat to the mock shoal 
 	ros::Subscriber deactivate_sub_;// Subscribing to message from deactivating the shoal, removing it 
 	void deactivate(const std_msgs::Empty msg); // Deactivates the following algorithm when the heartbeat returns false
 

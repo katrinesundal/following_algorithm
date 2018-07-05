@@ -24,7 +24,9 @@
 
 <!--  ______________________________ FOLLOWING ALGORITHM NODES _______________________________ -->
 
-    <!--<node pkg="virtual_anchor" type="anchor_dropper" name="anchor_dropper" output="screen"/>-->
+<!--    <node pkg="following_algorithm" type="shoal_of_fish" name="shoal_of_fish" output="screen"/> -->
+
+    <node pkg="following_algorithm" type="shoal_dropper" name="shoal_dropper" output="screen"/>
 
     <node pkg="following_algorithm" type="tf_odom_ned" name="tf_odom_ned" output="screen"/>
 

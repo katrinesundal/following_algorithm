@@ -117,9 +117,13 @@ add_executable(tf_odom_ned src/tf_odom_ned.cpp)
 target_link_libraries(tf_odom_ned ${catkin_LIBRARIES})
 add_dependencies(tf_odom_ned following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
-#add_executable(shoal_of_fish src/shoal_of_fish.cpp)
-#target_link_libraries(shoal_of_fish ${catkin_LIBRARIES})
-#add_dependencies(shoal_of_fish following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_executable(shoal_of_fish src/shoal_of_fish.cpp)
+target_link_libraries(shoal_of_fish ${catkin_LIBRARIES})
+add_dependencies(shoal_of_fish following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+
+add_executable(shoal_dropper src/shoal_dropper.cpp)
+target_link_libraries(shoal_dropper ${catkin_LIBRARIES})
+add_dependencies(shoal_dropper following_algorithm_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

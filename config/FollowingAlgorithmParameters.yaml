@@ -7,7 +7,7 @@ azimuth_rotation_cutoff_RPM: 300 #rpm
 timeout_time: 1 #sec
 yaw_error_cutoff: 3.14 #rad
 #controller_type: "point_to_point"  # "heading_equilibrium" #     
-#surge_error_flag_limit: 150 #m, flag is raised if error is larger than this value
+surge_error_flag_limit: 150 #m, flag is raised if error is larger than this value
 
 #Low-pass filter param
 timestep: 0.1 #s
@@ -15,6 +15,7 @@ time_constant_lowpass_filter_azimuth_RPM: 1 # Used to filter azimuth rpm output 
 time_constant_lowpass_filter_azimuth_rotation: 1 # Used to filter azimuth rotation output to smooth out rapid changes
 
 # Shoal parameters
+set_shoal_distance: 100 #m
 shoal_size: 10 #m
 
 # Kp matrix

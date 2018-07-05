@@ -6,26 +6,28 @@ TF::TF()
 	got_first_odom_msg_ = false;
 	shoal_of_fishes_detected_ = false;
 
-	if (!nh_.getParam("set_shoal_size", set_shoal_size_))
+	if (!nh_.getParam("set_shoal_distance", set_shoal_distance_))
 	{
-		set_shoal_size_ = 0; //ROS_INFO?
+		set_shoal_distance_ = 0; //ROS_INFO?
 	}
 
-	odom_message_rec = nh_.subscribe<nav_msgs::Odometry>("following_algorithm/odom", 0, &TF::receiveOdomMsg, this); // Subscribing to mru message of type Odometry
+	odom_msg_rec = nh_.subscribe<nav_msgs::Odometry>("sensors/odom", 0, &TF::receiveOdomMsg, this); // Subscribing to mru message of type Odometry
+	
+	activate_by_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_coordinates", 0, &TF::startShoalByGPS, this); // Subscribing to message from releasing the shoal of fish by a startpoint GPS
+	activate_by_distance_sub_ = nh_.subscribe("following_algorithm/activate_by_distance_ahead", 0, &TF::startShoalByDistanceAhead, this);//!< Subscribing to message from dropping the anchor by distance from boat to anchor point
+	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &TF::removeShoal, this); // Subscribing to message from removing the shoal
+	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &TF::setShoalParameter, this); 
+	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000); // Publishing shoal to GUI for drawing circles
+
 
 	while(!got_first_odom_msg_)
 	{
 		//Wait for first odom message before accepting any activation commands
-		ROS_INFO("hei!");
+		ROS_INFO("hei, venter!");
 		ros::spinOnce();
 		ros::Duration(1.0).sleep();
 	}
 
-
-	activate_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_coordinates", 0, &TF::startShoalByGPS, this); // Subscribing to message from releasing the shoal of fish by a startpoint GPS
-	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &TF::removeShoal, this); // Subscribing to message from removing the shoal
-	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &TF::setShoalParameter, this); 
-	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000); // Publishing shoal to GUI for drawing circles
 }
 
 TF::~TF()
@@ -53,7 +55,7 @@ void TF::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg)
 	boat_gps_position_.latitude = odom_msg->pose.pose.position.y; // Boats position on latitude
 	boat_yaw_ = tf2::getYaw(odom_msg->pose.pose.orientation);
 
-	if(shoal_of_fishes_detected_) // TODO: where is this variable set?? 
+	if(shoal_of_fishes_detected_)  
 	{
 		
 		double north_dist = (boat_gps_position_.latitude - shoal_gps_position_.latitude)/latitudeDegPrMeter();// Update north_dist
@@ -82,9 +84,9 @@ void TF::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
 void TF::setShoalParameter(const following_algorithm::SetShoalParameter::ConstPtr& shoal_parameter)
 {
-	if(shoal_parameter->name == "set_shoal_size_" || shoal_parameter->name == "set_shoal_size")
+	if(shoal_parameter->name == "set_shoal_distance_" || shoal_parameter->name == "set_shoal_distance")
 	{
-		set_shoal_size_ = shoal_parameter->value;
+		set_shoal_distance_ = shoal_parameter->value;
 	}
 }
 
@@ -92,6 +94,26 @@ void TF::startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& 
 {
 	shoal_gps_position_.latitude = shoal_starting_point->latitude;
 	shoal_gps_position_.longitude = shoal_starting_point->longitude;
+	shoal_of_fishes_detected_ = true;
+
+	following_algorithm::guiObjectUpdate shoal;
+	shoal.msgDescriptor ="position_update";
+	shoal.objectDescriptor = "shoal";
+	shoal.objectID = "shoal_1";
+	shoal.size = 10.0;
+	shoal.longitude = shoal_gps_position_.longitude;
+	shoal.latitude = shoal_gps_position_.latitude;
+	shoal.heading = 0.0;
+	draw_shoal_pub_.publish(shoal);
+
+	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
+	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
+}
+
+void TF::startShoalByDistanceAhead(const std_msgs::Float64 msg)
+{
+	shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * cos(boat_yaw_) * latitudeDegPrMeter();
+	shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * sin(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
 	shoal_of_fishes_detected_ = true;
 
 	following_algorithm::guiObjectUpdate shoal;

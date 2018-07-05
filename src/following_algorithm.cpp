@@ -6,17 +6,18 @@ FollowingAlgorithm::FollowingAlgorithm()
 {
 	get_max_surge_force_client_ = nh_.serviceClient<following_algorithm::get_max_surge_force>("following_algorithm/get_max_surge_force");
 	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &FollowingAlgorithm::setShoalParameter, this);
-	mru_message_sub_ = nh_.subscribe<nav_msgs::Odometry>("following_algorithm/odom", 0, &FollowingAlgorithm::receiveOdomMsg, this);
+	mru_message_sub_ = nh_.subscribe<nav_msgs::Odometry>("sensors/odom", 0, &FollowingAlgorithm::receiveOdomMsg, this);
 	force_vec_pub_ = nh_.advertise<geometry_msgs::Twist>("following_algorithm/force_vector", 1000);
 	set_K_val_sub_ = nh_.subscribe("following_algorithm/set_K_val", 0, &FollowingAlgorithm::setKValues, this);
 	activate_by_coordinates_sub_ = nh_.subscribe("following_algorithm/activate_by_coordinates", 0, &FollowingAlgorithm::activateByCoordinates, this);
+	activate_by_distance_sub_ = nh_.subscribe("following_algorithm/activate_by_distance_ahead", 0, &FollowingAlgorithm::activateByDistanceAhead, this);
 	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &FollowingAlgorithm::deactivate, this);
 	heartbeat_pub_ = nh_.advertise<following_algorithm::Heartbeat>("following_algorithm/heartbeat", 1000);
 	error_pub_ = nh_.advertise<std_msgs::Float64MultiArray>("following_algorithm/controller_errors", 1000);
 
 	if(!readParameters(nh_))
 	{
-		ROS_INFO("Unable to read boat controller parameter file. Exit node station_keeping_controller");
+		ROS_INFO("Unable to read boat controller parameter file. Exit node following_algorithm");
 		ros::shutdown();
 	}
 
@@ -86,7 +87,7 @@ bool FollowingAlgorithm::isWithinRangeLimit()
 {
 	geometry_msgs::TransformStamped transform_stamped;
 
-    try{ //transform origin in anchor_NED to body fixed.
+    try{ //transform origin in shoal_NED to body fixed.
     	transform_stamped = tf_buffer_.lookupTransform("body_fixed","shoal", ros::Time(0), ros::Duration(5.0));
     }
     catch (tf2::TransformException &ex) {
@@ -185,7 +186,7 @@ bool FollowingAlgorithm::readParameters(ros::NodeHandle nh)
 	timeout_time_ = ros::Duration(timeout_time);
 
 
-	return !parameterFail; //return true if sucessful
+	return !parameterFail; // Return true if sucessful
 
 }
 
@@ -206,9 +207,11 @@ void FollowingAlgorithm::setShoalParameter(const following_algorithm::SetShoalPa
 
 void FollowingAlgorithm::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom)
 {
+	last_odometry_message_receive_time_ = ros::Time::now();
+	heartbeat_.got_odometry_message = true;
 	yaw_rate_ = odom->twist.twist.angular.z;
-	surge_velocity_ = odom->twist.twist.linear.x;
-	yaw_ = tf2::getYaw(odom->pose.pose.orientation);
+	surge_velocity_ = odom->twist.twist.linear.x; 
+	yaw_ = tf2::getYaw(odom->pose.pose.orientation); //Not used
 }
 
 void FollowingAlgorithm::getKValues(const following_algorithm::ControllerKValues::ConstPtr& k_values)
@@ -247,6 +250,13 @@ void FollowingAlgorithm::activateByCoordinates(const following_algorithm::ShoalC
 {
 	heartbeat_.is_active = true;
 	ROS_INFO("Shoal starting point set by coordinates ( %f , %f )", shoal_starting_point->latitude, shoal_starting_point->longitude);
+}
+
+void FollowingAlgorithm::activateByDistanceAhead(const std_msgs::Float64 msg)
+{	
+	heartbeat_.is_active = true;
+	
+	ROS_INFO("Activated following_algorithm by distance");
 }
 
 void FollowingAlgorithm::deactivate(const std_msgs::Empty msg)
