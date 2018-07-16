@@ -346,11 +346,11 @@ void FollowingAlgorithm::calculateForce()
 		output_force_vector_(0) =  0;
 	}
 
-	/*if(surge_error_ < distance_cutoff_ - desired_distance_)
-	{ //Very close to the anchor point - just relax :)
+	if(surge_error_ < shoal_size_)
+	{ //Above the shoal - just relax :)
 		output_force_vector_(0) = 0;
 		output_force_vector_(5) = 0;
-	}*/
+	}
 
 }
 
