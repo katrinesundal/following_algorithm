@@ -40,6 +40,7 @@ private:
 	ros::Subscriber activate_by_coordinates_sub_;
 	ros::Subscriber activate_by_distance_sub_;
 	ros::Subscriber set_param_sub_;
+	ros::Subscriber key_press_sub_;
 	ros::Publisher draw_shoal_pub_;
 
 	double latitudeDegPrMeter(); // Returns latitude in degrees per meter
@@ -48,6 +49,7 @@ private:
 	void setShoalParameter(const following_algorithm::SetShoalParameter::ConstPtr& shoal_parameter);
 	void startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& shoal_starting_point); // Releases shoal of fish at a specific coordinates defined when the shoal is started, activates the following algorithm
 	void startShoalByDistanceAhead(const std_msgs::Float64 msg);// Starts shoal x meters in front of the boat, activates the following algorithm
+	void moveShoalByKey(const geometry_msgs::Twist::ConstPtr &key_press_vec); // Moves the shoal by using the arrows on a keyboard, needs to have corresponding node running 
 	void removeShoal(const std_msgs::Empty msg); // Removes the shoal of fish and deactivates the following algorithm
 
 	gpsPoint shoal_gps_position_, boat_gps_position_; // Position of the shoal of fishes and the boat
@@ -56,6 +58,7 @@ private:
 	bool shoal_of_fishes_detected_;
 	bool got_first_odom_msg_;
 	double set_shoal_distance_;
+	double surge_vel_, yaw_vel_;
 	
 };
 

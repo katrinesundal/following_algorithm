@@ -1,5 +1,6 @@
-// Very simple thrust allocation node. Thrust allocation is based on a force vector received from station_keeping_controller.cpp. Surge_dot is controlled by combined (equal) thrust (u) output
-// from the two main thrusters, and Sway_dot is controlled by bow thruster and by rotating the two main thrusters.
+// Very simple thrust allocation node. Thrust allocation is based on a force vector received from station_keeping_controller.cpp. 
+// Surge_dot is controlled by combined (equal) thrust (u) output from the two main thrusters, 
+// and yaw_dot is controlled by bow thruster and by rotating the two main thrusters.
 
 #ifndef THRUST_OUTPUT_H
 #define THRUST_OUTPUT_H

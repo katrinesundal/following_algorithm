@@ -18,7 +18,7 @@ TF::TF()
 	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &TF::removeShoal, this); // Subscribing to message from removing the shoal
 	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &TF::setShoalParameter, this); 
 	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000); // Publishing shoal to GUI for drawing circles
-
+	key_press_sub_ = nh_.subscribe("cmd_vel", 0, &TF::moveShoalByKey, this);
 
 	while(!got_first_odom_msg_)
 	{
@@ -128,6 +128,31 @@ void TF::startShoalByDistanceAhead(const std_msgs::Float64 msg)
 
 	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
 	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
+}
+
+void TF::moveShoalByKey(const geometry_msgs::Twist::ConstPtr &key_press_vec)
+{
+	// Change the calculations of its position when using keyboard
+	surge_vel_ = key_press_vec->linear.x;
+  	yaw_vel_ = key_press_vec->angular.z;
+
+	//shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * cos(boat_yaw_) * latitudeDegPrMeter();
+	//shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * sin(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
+	shoal_of_fishes_detected_ = true;
+
+	following_algorithm::guiObjectUpdate shoal;
+	shoal.msgDescriptor ="position_update";
+	shoal.objectDescriptor = "shoal";
+	shoal.objectID = "shoal_1";
+	shoal.size = 10.0;
+	shoal.longitude = shoal_gps_position_.longitude;
+	shoal.latitude = shoal_gps_position_.latitude;
+	shoal.heading = 0.0;
+	draw_shoal_pub_.publish(shoal);
+
+	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
+	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
+
 }
 
 void TF::removeShoal(const std_msgs::Empty msg)
