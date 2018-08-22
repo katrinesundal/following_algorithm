@@ -37,20 +37,25 @@
  <!-- ___________________________________ LOG NODE __________________________________________ -->
  <!-- This node logs all the data necessary to show a complete test run in gui -->
 
- <!-- 
-<node pkg="rosbag" type="record" name="record_virtual_anchor"  
+ 
+<node pkg="rosbag" type="record" name="record_following_algorithm"  
 args="-o 
 
-/home/msc/log/
+/home/katrine/msc/log/
+
 
 sensors/odom
-virtual_anchor/position
+sensors/mru/velocity
+following_algorithm/position
+following_algorithm/force_vector
+following_algorithm/actuator_commands
+following_algorithm/controller_errors
 input/actuators_sim
-virtual_anchor/controller_errors
-virtual_anchor/deactivate
-virtual_anchor/set_anchor_parameter
+input/thrust
 /clock" 
+
+
 output="screen" />
--->
+
 
 </launch>

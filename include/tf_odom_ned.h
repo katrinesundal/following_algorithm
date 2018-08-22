@@ -13,6 +13,7 @@
 #include "tf2/utils.h"
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/TransformStamped.h"
+#include "geometry_msgs/Twist.h"
 #include "std_msgs/Float64.h"
 #include "std_msgs/Empty.h"
 #include "following_algorithm/guiObjectUpdate.h"
@@ -45,20 +46,27 @@ private:
 
 	double latitudeDegPrMeter(); // Returns latitude in degrees per meter
 	double longitudeDegPrMeter(double currentLatitude); // Returns longitude in degrees per meter
+	double filterCoordinates(double input, double average); // Filters the coordinates through a low-pass filter
+
 	void receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg); // Receives odometry data 
+	
+	// Moving shoal by keyboard
+	void receiveKeyboardPress(const geometry_msgs::Twist::ConstPtr &key_press_vec); // Receives the velocities according to the keyboard presses
+	void keyboardUpdateShoalPosition(); // Update the shoal position based on the keyboard input 
+	
 	void setShoalParameter(const following_algorithm::SetShoalParameter::ConstPtr& shoal_parameter);
 	void startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& shoal_starting_point); // Releases shoal of fish at a specific coordinates defined when the shoal is started, activates the following algorithm
 	void startShoalByDistanceAhead(const std_msgs::Float64 msg);// Starts shoal x meters in front of the boat, activates the following algorithm
-	void moveShoalByKey(const geometry_msgs::Twist::ConstPtr &key_press_vec); // Moves the shoal by using the arrows on a keyboard, needs to have corresponding node running 
 	void removeShoal(const std_msgs::Empty msg); // Removes the shoal of fish and deactivates the following algorithm
 
-	gpsPoint shoal_gps_position_, boat_gps_position_; // Position of the shoal of fishes and the boat
+	gpsPoint shoal_gps_position_, old_shoal_gps_position_, filtered_shoal_gps_position_, boat_gps_position_; // Position of the shoal of fishes and the boat
 
 	double boat_yaw_; // Yaw orientation of the boat
 	bool shoal_of_fishes_detected_;
 	bool got_first_odom_msg_;
 	double set_shoal_distance_;
-	double surge_vel_, yaw_vel_;
+	double surge_vel_, yaw_vel_; // Velocities of shoal based on keyboard input
+	double factor_;
 	
 };
 

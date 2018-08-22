@@ -18,7 +18,10 @@ TF::TF()
 	deactivate_sub_ = nh_.subscribe("following_algorithm/deactivate", 0, &TF::removeShoal, this); // Subscribing to message from removing the shoal
 	set_param_sub_ = nh_.subscribe("following_algorithm/set_shoal_parameter", 0, &TF::setShoalParameter, this); 
 	draw_shoal_pub_ = nh_.advertise<following_algorithm::guiObjectUpdate>("following_algorithm/position", 1000); // Publishing shoal to GUI for drawing circles
-	key_press_sub_ = nh_.subscribe("cmd_vel", 0, &TF::moveShoalByKey, this);
+	key_press_sub_ = nh_.subscribe("cmd_vel", 0, &TF::receiveKeyboardPress, this);
+
+	surge_vel_ = 0.0;
+    yaw_vel_ = 0.0;
 
 	while(!got_first_odom_msg_)
 	{
@@ -46,6 +49,13 @@ double TF::longitudeDegPrMeter(double currentLatitude)
 	double deg2rad = M_PI/180; // Converting degrees to radians
 	double r = 6378000; // Meters, assumed constant, radius of the earth
 	return 180/(2*M_PI*r*cos(currentLatitude*deg2rad)/2);
+}
+
+double TF::filterCoordinates(double input, double average)
+{
+	factor_ = 0.1;
+	
+	return (input*factor_ + (1-factor_)*average);
 }
 
 void TF::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg)
@@ -82,6 +92,44 @@ void TF::receiveOdomMsg(const nav_msgs::Odometry::ConstPtr &odom_msg)
 
 }
 
+void TF::receiveKeyboardPress(const geometry_msgs::Twist::ConstPtr &key_press_vec)
+{
+	surge_vel_ = key_press_vec->linear.x;
+  	yaw_vel_ = key_press_vec->angular.z;
+  	ROS_INFO("Received keyboard press");
+  	keyboardUpdateShoalPosition();
+}
+
+void TF::keyboardUpdateShoalPosition()
+{
+	// Setting old gps position to gps position of previous calculation
+	old_shoal_gps_position_.latitude = shoal_gps_position_.latitude;
+	old_shoal_gps_position_.longitude = shoal_gps_position_.longitude;
+
+	// Calculating new gps position
+	shoal_gps_position_.latitude = old_shoal_gps_position_.latitude + surge_vel_ * cos(yaw_vel_) * latitudeDegPrMeter();
+	shoal_gps_position_.longitude = old_shoal_gps_position_.longitude + surge_vel_ * sin(yaw_vel_) * longitudeDegPrMeter(old_shoal_gps_position_.latitude);
+
+	//filtered_shoal_gps_position_.latitude = filterCoordinates(filtered_shoal_gps_position_.latitude, shoal_gps_position_.latitude);
+	//filtered_shoal_gps_position_.longitude = filterCoordinates(filtered_shoal_gps_position_.longitude, shoal_gps_position_.longitude);
+
+	shoal_of_fishes_detected_ = true;
+
+	following_algorithm::guiObjectUpdate shoal;
+	shoal.msgDescriptor ="position_update";
+	shoal.objectDescriptor = "shoal";
+	shoal.objectID = "shoal_1";
+	shoal.size = 10.0;
+	shoal.longitude = shoal_gps_position_.longitude;
+	shoal.latitude = shoal_gps_position_.latitude;
+	shoal.heading = 0.0;
+	draw_shoal_pub_.publish(shoal);
+
+	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
+	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
+
+}
+
 void TF::setShoalParameter(const following_algorithm::SetShoalParameter::ConstPtr& shoal_parameter)
 {
 	if(shoal_parameter->name == "set_shoal_distance_" || shoal_parameter->name == "set_shoal_distance")
@@ -112,30 +160,15 @@ void TF::startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& 
 
 void TF::startShoalByDistanceAhead(const std_msgs::Float64 msg)
 {
-	shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * cos(boat_yaw_) * latitudeDegPrMeter();
-	shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * sin(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
-	shoal_of_fishes_detected_ = true;
+	// Starting shoal by distance to the right
+	shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * sin(boat_yaw_) * latitudeDegPrMeter();
+	shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * cos(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
 
-	following_algorithm::guiObjectUpdate shoal;
-	shoal.msgDescriptor ="position_update";
-	shoal.objectDescriptor = "shoal";
-	shoal.objectID = "shoal_1";
-	shoal.size = 10.0;
-	shoal.longitude = shoal_gps_position_.longitude;
-	shoal.latitude = shoal_gps_position_.latitude;
-	shoal.heading = 0.0;
-	draw_shoal_pub_.publish(shoal);
-
-	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
-	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
-}
-
-void TF::moveShoalByKey(const geometry_msgs::Twist::ConstPtr &key_press_vec)
-{
-	// Change the calculations of its position when using keyboard
-	surge_vel_ = key_press_vec->linear.x;
-  	yaw_vel_ = key_press_vec->angular.z;
-
+	// Starting shoal by distance to the left
+	//shoal_gps_position_.latitude = boat_gps_position_.latitude - set_shoal_distance_ * sin(boat_yaw_) * latitudeDegPrMeter();
+	//shoal_gps_position_.longitude = boat_gps_position_.longitude - set_shoal_distance_ * cos(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
+	
+	// Starting shoal by distance ahead 
 	//shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * cos(boat_yaw_) * latitudeDegPrMeter();
 	//shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * sin(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
 	shoal_of_fishes_detected_ = true;
@@ -152,7 +185,6 @@ void TF::moveShoalByKey(const geometry_msgs::Twist::ConstPtr &key_press_vec)
 
 	ROS_INFO("latitude = %f", shoal_gps_position_.latitude);
 	ROS_INFO("longitude = %f", shoal_gps_position_.longitude);
-
 }
 
 void TF::removeShoal(const std_msgs::Empty msg)

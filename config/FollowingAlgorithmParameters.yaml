@@ -13,6 +13,7 @@ surge_error_flag_limit: 150 #m, flag is raised if error is larger than this valu
 timestep: 0.1 #s
 time_constant_lowpass_filter_azimuth_RPM: 1 # Used to filter azimuth rpm output to smooth out rapid changes
 time_constant_lowpass_filter_azimuth_rotation: 1 # Used to filter azimuth rotation output to smooth out rapid changes
+time_constant_lowpass_filter_coordinates: 1 # Used to filter new coordinares for shoal, to smooth out rapid changes 
 
 # Shoal parameters
 set_shoal_distance: 100 #m
