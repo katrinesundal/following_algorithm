@@ -16,19 +16,19 @@ time_constant_lowpass_filter_azimuth_rotation: 1 # Used to filter azimuth rotati
 time_constant_lowpass_filter_coordinates: 1 # Used to filter new coordinares for shoal, to smooth out rapid changes 
 
 # Shoal parameters
-set_shoal_distance: 100 #m
+set_shoal_distance: 80 #m
 shoal_size: 10 #m
 
 # Kp matrix
-kp_surge: 160
-kp_sway: 0.005
+kp_surge: 100
+kp_sway: 0
 kp_heave: 0
 kp_roll: 0
 kp_pitch: 0
-kp_yaw: 4000
+kp_yaw: 5000
 
 # Kd matrix
-kd_surge: 80
+kd_surge: 1300
 kd_sway: 0 
 kd_heave: 0
 kd_roll: 0 
@@ -36,7 +36,7 @@ kd_pitch: 0
 kd_yaw: 0
 
 # Ki matrix
-ki_surge: 4
+ki_surge: 20
 ki_sway: 0 
 ki_heave: 0
 ki_roll: 0 

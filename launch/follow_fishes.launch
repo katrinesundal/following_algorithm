@@ -41,7 +41,7 @@
 <node pkg="rosbag" type="record" name="record_following_algorithm"  
 args="-o 
 
-/home/katrine/msc/log/
+/home/katrine/msc/src/following_algorithm/log/
 
 
 sensors/odom

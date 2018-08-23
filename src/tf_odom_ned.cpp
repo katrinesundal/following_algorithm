@@ -161,16 +161,16 @@ void TF::startShoalByGPS(const following_algorithm::ShoalCoordinates::ConstPtr& 
 void TF::startShoalByDistanceAhead(const std_msgs::Float64 msg)
 {
 	// Starting shoal by distance to the right
-	shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * sin(boat_yaw_) * latitudeDegPrMeter();
-	shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * cos(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
+	//shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * sin(boat_yaw_) * latitudeDegPrMeter();
+	//shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * cos(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
 
 	// Starting shoal by distance to the left
 	//shoal_gps_position_.latitude = boat_gps_position_.latitude - set_shoal_distance_ * sin(boat_yaw_) * latitudeDegPrMeter();
 	//shoal_gps_position_.longitude = boat_gps_position_.longitude - set_shoal_distance_ * cos(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
 	
 	// Starting shoal by distance ahead 
-	//shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * cos(boat_yaw_) * latitudeDegPrMeter();
-	//shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * sin(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
+	shoal_gps_position_.latitude = boat_gps_position_.latitude + set_shoal_distance_ * cos(boat_yaw_) * latitudeDegPrMeter();
+	shoal_gps_position_.longitude = boat_gps_position_.longitude + set_shoal_distance_ * sin(boat_yaw_) * longitudeDegPrMeter(boat_gps_position_.latitude);
 	shoal_of_fishes_detected_ = true;
 
 	following_algorithm::guiObjectUpdate shoal;
